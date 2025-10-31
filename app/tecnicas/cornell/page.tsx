@@ -44,6 +44,23 @@ export default function CornellPage() {
 
   const imprimirNotas = () => window.print();
 
+  function getTextoCorrecto(p: Pregunta): string {
+    // Normalizamos la respuesta que viene en p.correcta
+    const letra = p.correcta?.trim().toUpperCase() ?? "";
+
+    // Mapa tipado de letras a índice
+    const mapa: Record<"A" | "B" | "C" | "D", number> = { A: 0, B: 1, C: 2, D: 3 };
+
+    // Si es una letra A-D, intentamos obtener la opción correspondiente de forma segura
+    if (["A", "B", "C", "D"].includes(letra)) {
+      const idx = mapa[letra as "A" | "B" | "C" | "D"];
+      return p.opciones[idx] ?? p.correcta; // si no existe la opción, devolvemos p.correcta (seguro)
+    }
+
+    // Si no es una letra, devolvemos tal cual (puede ser ya la respuesta en texto)
+    return p.correcta;
+  }
+
   // 🔹 Generar quiz con IA
   const generarQuizIA = async () => {
     const datos = { claves, notas, resumen };
@@ -159,12 +176,19 @@ export default function CornellPage() {
 
           // Convertir letras a texto si es necesario
           let correctaTexto = correcta;
-          if (["A", "B", "C", "D"].includes(correcta.trim().toUpperCase())) {
-            const indice = { A: 0, B: 1, C: 2, D: 3 }[correcta.trim().toUpperCase()];
-            correctaTexto = p.opciones[indice];
+          const letra = correcta.trim().toUpperCase();
+
+          if (["A", "B", "C", "D"].includes(letra)) {
+            const mapaIndices: Record<"A" | "B" | "C" | "D", number> = { A: 0, B: 1, C: 2, D: 3 };
+            const indice = mapaIndices[letra as "A" | "B" | "C" | "D"];
+            const opcion = p.opciones[indice];
+            if (opcion !== undefined) {
+              correctaTexto = opcion;
+            }
           }
 
           const esCorrecta = respuestaUsuario === correctaTexto;
+
 
           return (
             <div
@@ -231,17 +255,21 @@ export default function CornellPage() {
           <button
             onClick={() => {
               let correctas = 0;
+
               quiz.forEach((p, idx) => {
                 const respuestaUsuario = respuestas[idx];
-                const correcta = p.correcta;
+                //const correcta = p.correcta;
+                const correctaTexto = getTextoCorrecto(p);
 
-                let correctaTexto = correcta;
+                if (respuestaUsuario === correctaTexto) correctas++;
+
+                /*let correctaTexto = correcta;
                 if (["A", "B", "C", "D"].includes(correcta.trim().toUpperCase())) {
                   const indice = { A: 0, B: 1, C: 2, D: 3 }[correcta.trim().toUpperCase()];
                   correctaTexto = p.opciones[indice];
                 }
 
-                if (respuestaUsuario === correctaTexto) correctas++;
+                if (respuestaUsuario === correctaTexto) correctas++;*/
               });
               setResultado({ correctas, total: quiz.length });
             }}

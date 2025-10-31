@@ -27,11 +27,11 @@ export default function ClasicoPage() {
   };
 
   const imprimirNotas = () => {
-    const botones = document.querySelectorAll("button, a");
-    botones.forEach((btn) => (btn.style.display = "none"));
-    window.print();
-    setTimeout(() => botones.forEach((btn) => (btn.style.display = "")), 1000);
-  };
+  const botones = document.querySelectorAll("button, a") as NodeListOf<HTMLElement>;
+  botones.forEach((btn) => (btn.style.display = "none"));
+  window.print();
+  setTimeout(() => botones.forEach((btn) => (btn.style.display = "")), 1000);
+};
 
   return (
     <div className="min-h-screen p-6 font-handlee bg-gradient-to-br from-pink-100 to-purple-100">
