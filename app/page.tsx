@@ -7,46 +7,53 @@ export default function HomePage() {
   const bgMusicRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    // Partículas flotantes
-    const canvas = canvasRef.current;
+  const canvas = canvasRef.current;
+  const ctx = canvas?.getContext("2d");
+
+  if (!canvas || !ctx) return;
+
+  let particles: { x: number; y: number; r: number; d: number }[] = [];
+
+  function resizeCanvas() {
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
 
-    let particles: { x: number; y: number; r: number; d: number }[] = [];
+  function initParticles() {
+    if (!canvas) return;
+    particles = Array.from({ length: 50 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 1,
+      d: Math.random() * 0.5 + 0.2,
+    }));
+  }
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+  function drawParticles() {
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+    particles.forEach((p) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      p.y += p.d;
+      if (p.y > canvas.height) p.y = 0;
+    });
+    requestAnimationFrame(drawParticles);
+  }
 
-    function initParticles() {
-      particles = Array.from({ length: 50 }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 2 + 1,
-        d: Math.random() * 0.5 + 0.2,
-      }));
-    }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+  initParticles();
+  drawParticles();
 
-    function drawParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-      particles.forEach((p) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-        p.y += p.d;
-        if (p.y > canvas.height) p.y = 0;
-      });
-      requestAnimationFrame(drawParticles);
-    }
+  return () => {
+    window.removeEventListener("resize", resizeCanvas);
+  };
+}, []);
 
-    initParticles();
-    drawParticles();
-  }, []);
 
   const toggleMusic = async () => {
     const music = bgMusicRef.current;
