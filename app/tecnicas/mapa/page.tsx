@@ -24,22 +24,43 @@ export default function MapaMentalFlow() {
 
   // Cargar desde localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("mapaMentalFlow");
-    if (saved) {
-      const { nodes, edges } = JSON.parse(saved);
-      setNodes(nodes);
-      setEdges(edges);
-    } else {
-      setNodes([
+  const saved = localStorage.getItem("mapaMentalFlow");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // casteamos explícitamente a los tipos de React Flow
+      setNodes(parsed.nodes as Node[]);
+      setEdges(parsed.edges as Edge[]);
+    } catch (err) {
+      console.warn("mapaMentalFlow: JSON inválido, usando valores por defecto.", err);
+      // si falla el parseamos, seguimos y creamos el nodo inicial
+      const initialNodes: Node[] = [
         {
           id: "1",
           data: { label: "Idea principal 🧠" },
           position: { x: 250, y: 200 },
           style: { backgroundColor: "#fbcfe8", padding: 10, borderRadius: 15 },
         },
-      ]);
+      ];
+      setNodes(initialNodes);
+      setEdges([]);
     }
-  }, []);
+    return;
+  }
+
+  // Valor por defecto si no hay nada guardado
+  const initialNodes: Node[] = [
+    {
+      id: "1",
+      data: { label: "Idea principal 🧠" },
+      position: { x: 250, y: 200 },
+      style: { backgroundColor: "#fbcfe8", padding: 10, borderRadius: 15 },
+    },
+  ];
+  setNodes(initialNodes);
+  setEdges([]);
+}, []);
+
 
   // Guardar automáticamente
   useEffect(() => {
@@ -86,33 +107,35 @@ export default function MapaMentalFlow() {
   if (!flowRef.current) return;
 
   try {
-    // 🔹 Ocultar minimapa y controles temporalmente
-    const miniMap = flowRef.current.querySelector(".react-flow__minimap");
-    const controls = flowRef.current.querySelector(".react-flow__controls");
-    if (miniMap) miniMap.style.display = "none";
-    if (controls) controls.style.display = "none";
+  // 🔹 Ocultar minimapa y controles temporalmente
+  const miniMap = flowRef.current.querySelector(".react-flow__minimap") as HTMLElement | null;
+  const controls = flowRef.current.querySelector(".react-flow__controls") as HTMLElement | null;
 
-    // 🔹 Generar la imagen
-    const canvas = await html2canvas(flowRef.current, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-      useCORS: true,
-    });
+  if (miniMap) miniMap.style.display = "none";
+  if (controls) controls.style.display = "none";
 
-    // 🔹 Restaurar visibilidad
-    if (miniMap) miniMap.style.display = "";
-    if (controls) controls.style.display = "";
+  // 🔹 Generar la imagen
+  const canvas = await html2canvas(flowRef.current, {
+    backgroundColor: "#ffffff",
+    scale: 2,
+    useCORS: true,
+  });
 
-    // 🔹 Descargar imagen
-    const dataUrl = canvas.toDataURL("image/png");
-    const enlace = document.createElement("a");
-    enlace.href = dataUrl;
-    enlace.download = "mapa-mental.png";
-    enlace.click();
-  } catch (err) {
-    console.error("Error al exportar imagen:", err);
-    alert("❌ No se pudo exportar la imagen.");
-  }
+  // 🔹 Restaurar visibilidad
+  if (miniMap) miniMap.style.display = "";
+  if (controls) controls.style.display = "";
+
+  // 🔹 Descargar imagen
+  const dataUrl = canvas.toDataURL("image/png");
+  const enlace = document.createElement("a");
+  enlace.href = dataUrl;
+  enlace.download = "mapa-mental.png";
+  enlace.click();
+} catch (err) {
+  console.error("Error al exportar imagen:", err);
+  alert("❌ No se pudo exportar la imagen.");
+}
+
 };
 
 
