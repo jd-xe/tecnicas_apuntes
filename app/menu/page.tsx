@@ -1,11 +1,11 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 export default function MenuPage() {
   const bgMusicRef = useRef<HTMLAudioElement>(null);
   const musicIconRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  let reproduciendo = false;
+  const [reproduciendo, setReproduciendo] = useState(false);
 
   // 🎐 Fondo animado con partículas
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function MenuPage() {
         await musica.play();
         icono.classList.replace("bx-play", "bx-pause");
       }
-      reproduciendo = !reproduciendo;
+      setReproduciendo(!reproduciendo);
     } catch (err) {
       alert(
         "El navegador bloqueó la reproducción automática. Usa el botón para activarla manualmente."
@@ -82,7 +82,7 @@ export default function MenuPage() {
       {/* Botón de regresar */}
       <a
         href="/"
-        className="btn-regresar fixed top-5 left-5 bg-white/15 text-indigo-200 px-4 py-2 rounded-full font-semibold flex items-center gap-1 backdrop-blur-md shadow-md z-10 hover:bg-indigo-300/30 hover:scale-105 transition"
+        className="btn-regresar fixed top-5 left-5 bg-white/15 text-indigo-200 px-4 py-2 rounded-full font-semibold flex items-center gap-1 backdrop-blur-md shadow-md hover:bg-indigo-300/30 hover:scale-105 transition z-10"
       >
         <i className="bx bx-left-arrow-alt text-2xl"></i>
         <span>Volver</span>
