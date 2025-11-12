@@ -68,6 +68,7 @@ export default function CalendarioPage() {
   }, []);
 
   // 🔄 Cargar eventos desde Supabase
+  // 🔄 Cargar eventos desde Supabase
   useEffect(() => {
     const fetchEventos = async () => {
       const { data, error } = await supabase
@@ -75,72 +76,82 @@ export default function CalendarioPage() {
         .select("*")
         .eq("alumno_id", alumnoId);
 
-      if (error) console.error(error);
-      else {
-        const eventosFormateados = data.map((e) => {
-          // ⚙️ reconstruye la fecha como local (sin desplazamiento)
-          const [year, month, day] = e.fecha.split("-").map(Number);
-          const fechaLocal = new Date(year, month - 1, day);
-
-          // si tienes hora, también puedes usarla aquí:
-          // const [h, m, s] = (e.hora || "00:00:00").split(":").map(Number);
-          // const fechaLocal = new Date(year, month - 1, day, h, m, s);
-
-          return {
-            id: e.id,
-            title: e.titulo,
-            start: fechaLocal,
-            end: fechaLocal,
-          };
-        });
-
-        setEventos(eventosFormateados);
+      if (error) {
+        console.error(error);
+        return;
       }
+
+      const eventosFormateados = data.map((e) => {
+        const [year, month, day] = e.fecha.split("-").map(Number);
+        const [h, m, s] = (e.hora || "08:00:00").split(":").map(Number); // 🕗 por defecto 8:00
+        const inicio = new Date(year, month - 1, day, h, m, s);
+
+        // si no tiene hora, solo dura 30 min
+        const duracion = e.hora ? 60 * 60 * 1000 : 30 * 60 * 1000;
+        const fin = new Date(inicio.getTime() + duracion);
+
+        return {
+          id: e.id,
+          title: e.titulo,
+          start: inicio,
+          end: fin,
+          allDay: !e.hora, // 👈 marca si es de todo el día
+        };
+      });
+
+      setEventos(eventosFormateados);
     };
     fetchEventos();
   }, []);
 
-  // ➕ Crear evento
-  // ➕ Crear evento (versión corregida sin desfase de zona horaria)
-const handleSelectSlot = async ({ start }: any) => {
-  const titulo = prompt("📅 Escribe una nota o título para este día:");
-  if (!titulo) return;
+  // ➕ Crear evento según vista actual
+  const handleSelectSlot = async ({ start, end }: any) => {
+    const titulo = prompt("📅 Escribe una nota o título para este evento:");
+    if (!titulo) return;
 
-  // ✅ Toma la fecha local sin modificar por UTC
-  const fechaLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-  const fecha = format(fechaLocal, "yyyy-MM-dd");
+    const tieneHora = start.getHours() !== 0 || start.getMinutes() !== 0;
+    const fecha = format(start, "yyyy-MM-dd");
+    const hora = tieneHora ? format(start, "HH:mm:ss") : null;
 
-  // Puedes dejar la hora nula o en blanco si no la usas
-  const nuevoEvento = {
-    alumno_id: alumnoId,
-    fecha,
-    hora: null,
-    titulo,
-    tipo: "nota",
+    const nuevoEvento = {
+      alumno_id: alumnoId,
+      fecha,
+      hora,
+      titulo,
+      tipo: "nota",
+    };
+
+    const { data, error } = await supabase
+      .from("eventos_agenda")
+      .insert([nuevoEvento])
+      .select();
+
+    if (error) {
+      alert("❌ Error al guardar el evento");
+      console.error(error);
+      return;
+    }
+
+    const nuevo = data[0];
+    const [year, month, day] = nuevo.fecha.split("-").map(Number);
+    const [h, m, s] = (nuevo.hora || "08:00:00").split(":").map(Number);
+    const inicio = new Date(year, month - 1, day, h, m, s);
+    const fin = nuevo.hora
+      ? new Date(inicio.getTime() + 60 * 60 * 1000)
+      : new Date(inicio.getTime() + 30 * 60 * 1000);
+
+    setEventos([
+      ...eventos,
+      {
+        id: nuevo.id,
+        title: nuevo.titulo,
+        start: inicio,
+        end: fin,
+        allDay: !nuevo.hora,
+      },
+    ]);
   };
 
-  const { data, error } = await supabase
-    .from("eventos_agenda")
-    .insert([nuevoEvento])
-    .select();
-
-  if (error) {
-    alert("❌ Error al guardar el evento");
-    console.error(error);
-    return;
-  }
-
-  const nuevo = data[0];
-  setEventos([
-    ...eventos,
-    {
-      id: nuevo.id,
-      title: nuevo.titulo,
-      start: new Date(`${nuevo.fecha}T00:00:00`),
-      end: new Date(`${nuevo.fecha}T23:59:59`),
-    },
-  ]);
-};
 
 
 
