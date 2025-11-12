@@ -1,10 +1,11 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -15,11 +16,18 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
+);
+
 export default function CalendarioPage() {
   const [eventos, setEventos] = useState<any[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // 🎐 Fondo animado con partículas (igual que en el menú)
+  const alumnoId = "8a150e25-2168-40a6-87d0-b1d37b9dcb09";
+
+  // 🎐 Fondo animado con partículas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -35,7 +43,7 @@ export default function CalendarioPage() {
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
-    const dots = Array.from({ length: 50 }, () => ({
+    const dots = Array.from({ length: 40 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       r: Math.random() * 2 + 0.5,
@@ -59,13 +67,82 @@ export default function CalendarioPage() {
     return () => window.removeEventListener("resize", resizeCanvas);
   }, []);
 
-  const handleSelectSlot = ({ start }: any) => {
-    const titulo = prompt("📅 Escribe una nota o título para este día:");
-    if (titulo) {
-      const nuevo = { start, end: start, title: titulo };
-      setEventos([...eventos, nuevo]);
-    }
+  // 🔄 Cargar eventos desde Supabase
+  useEffect(() => {
+    const fetchEventos = async () => {
+      const { data, error } = await supabase
+        .from("eventos_agenda")
+        .select("*")
+        .eq("alumno_id", alumnoId);
+
+      if (error) console.error(error);
+      else {
+        const eventosFormateados = data.map((e) => {
+          // ⚙️ reconstruye la fecha como local (sin desplazamiento)
+          const [year, month, day] = e.fecha.split("-").map(Number);
+          const fechaLocal = new Date(year, month - 1, day);
+
+          // si tienes hora, también puedes usarla aquí:
+          // const [h, m, s] = (e.hora || "00:00:00").split(":").map(Number);
+          // const fechaLocal = new Date(year, month - 1, day, h, m, s);
+
+          return {
+            id: e.id,
+            title: e.titulo,
+            start: fechaLocal,
+            end: fechaLocal,
+          };
+        });
+
+        setEventos(eventosFormateados);
+      }
+    };
+    fetchEventos();
+  }, []);
+
+  // ➕ Crear evento
+  // ➕ Crear evento (versión corregida sin desfase de zona horaria)
+const handleSelectSlot = async ({ start }: any) => {
+  const titulo = prompt("📅 Escribe una nota o título para este día:");
+  if (!titulo) return;
+
+  // ✅ Toma la fecha local sin modificar por UTC
+  const fechaLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const fecha = format(fechaLocal, "yyyy-MM-dd");
+
+  // Puedes dejar la hora nula o en blanco si no la usas
+  const nuevoEvento = {
+    alumno_id: alumnoId,
+    fecha,
+    hora: null,
+    titulo,
+    tipo: "nota",
   };
+
+  const { data, error } = await supabase
+    .from("eventos_agenda")
+    .insert([nuevoEvento])
+    .select();
+
+  if (error) {
+    alert("❌ Error al guardar el evento");
+    console.error(error);
+    return;
+  }
+
+  const nuevo = data[0];
+  setEventos([
+    ...eventos,
+    {
+      id: nuevo.id,
+      title: nuevo.titulo,
+      start: new Date(`${nuevo.fecha}T00:00:00`),
+      end: new Date(`${nuevo.fecha}T23:59:59`),
+    },
+  ]);
+};
+
+
 
   const handleSelectEvent = (event: any) => {
     alert(`📘 Evento: ${event.title}`);
@@ -78,23 +155,23 @@ export default function CalendarioPage() {
         rel="stylesheet"
       />
 
-      {/* 🎐 Fondo animado */}
+      {/* Fondo animado */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#1f2040] via-[#2d2975] to-[#463c91] z-0" />
       <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
-      {/* 🌟 Luz ambiental */}
+      {/* Luz ambiental */}
       <div className="glow absolute top-[-100px] left-1/2 w-[400px] h-[400px] -translate-x-1/2 rounded-full bg-gradient-radial from-white/15 to-transparent blur-[90px] animate-pulse-slow pointer-events-none z-0" />
 
-      {/* 🔙 Botón de regresar */}
+      {/* Botón de regreso */}
       <Link
-        href="/menu" // <--- cambia esta ruta si lo deseas
+        href="/menu"
         className="fixed top-5 left-5 bg-white/15 text-indigo-200 px-4 py-2 rounded-full font-semibold flex items-center gap-1 backdrop-blur-md shadow-md hover:bg-indigo-300/30 hover:scale-105 transition z-10"
       >
         <i className="bx bx-left-arrow-alt text-2xl"></i>
         <span>Volver</span>
       </Link>
 
-      {/* 🗓️ Calendario */}
+      {/* Calendario */}
       <div className="relative z-10 bg-white/90 text-black rounded-2xl shadow-2xl p-6 max-w-5xl w-[90%] border border-indigo-200 backdrop-blur-md">
         <h2 className="text-3xl font-bold text-indigo-800 mb-4 text-center drop-shadow">
           🗓️ Calendario Escolar
@@ -125,7 +202,7 @@ export default function CalendarioPage() {
         </div>
       </div>
 
-      {/* 💫 Animaciones personalizadas */}
+      {/* Animaciones */}
       <style jsx>{`
         @keyframes pulse-slow {
           0%,
