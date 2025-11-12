@@ -23,23 +23,26 @@ const supabase = createClient(
 
 export default function CalendarioPage() {
   const [eventos, setEventos] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [showDetalle, setShowDetalle] = useState<any>(null);
+  const [nuevoTitulo, setNuevoTitulo] = useState("");
+  const [nuevaDescripcion, setNuevaDescripcion] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const alumnoId = "8a150e25-2168-40a6-87d0-b1d37b9dcb09";
 
-  // 🎐 Fondo animado con partículas
+  // 🎐 Fondo animado
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    function resizeCanvas() {
-      if (!canvas) return; // <- agregas esto
+    const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-    }
-
+    };
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
@@ -62,13 +65,12 @@ export default function CalendarioPage() {
       });
       requestAnimationFrame(draw);
     };
-
     draw();
+
     return () => window.removeEventListener("resize", resizeCanvas);
   }, []);
 
-  // 🔄 Cargar eventos desde Supabase
-  // 🔄 Cargar eventos desde Supabase
+  // 🔄 Cargar eventos
   useEffect(() => {
     const fetchEventos = async () => {
       const { data, error } = await supabase
@@ -83,19 +85,18 @@ export default function CalendarioPage() {
 
       const eventosFormateados = data.map((e) => {
         const [year, month, day] = e.fecha.split("-").map(Number);
-        const [h, m, s] = (e.hora || "08:00:00").split(":").map(Number); // 🕗 por defecto 8:00
+        const [h, m, s] = (e.hora || "08:00:00").split(":").map(Number);
         const inicio = new Date(year, month - 1, day, h, m, s);
-
-        // si no tiene hora, solo dura 30 min
         const duracion = e.hora ? 60 * 60 * 1000 : 30 * 60 * 1000;
         const fin = new Date(inicio.getTime() + duracion);
 
         return {
           id: e.id,
           title: e.titulo,
+          descripcion: e.descripcion,
           start: inicio,
           end: fin,
-          allDay: !e.hora, // 👈 marca si es de todo el día
+          allDay: !e.hora,
         };
       });
 
@@ -104,11 +105,17 @@ export default function CalendarioPage() {
     fetchEventos();
   }, []);
 
-  // ➕ Crear evento según vista actual
-  const handleSelectSlot = async ({ start, end }: any) => {
-    const titulo = prompt("📅 Escribe una nota o título para este evento:");
-    if (!titulo) return;
+  // ➕ Abrir modal para crear evento
+  const handleSelectSlot = (slotInfo: any) => {
+    setSelectedSlot(slotInfo);
+    setShowModal(true);
+  };
 
+  // 💾 Guardar evento nuevo
+  const guardarEvento = async () => {
+    if (!nuevoTitulo.trim()) return;
+
+    const start = selectedSlot.start;
     const tieneHora = start.getHours() !== 0 || start.getMinutes() !== 0;
     const fecha = format(start, "yyyy-MM-dd");
     const hora = tieneHora ? format(start, "HH:mm:ss") : null;
@@ -117,7 +124,8 @@ export default function CalendarioPage() {
       alumno_id: alumnoId,
       fecha,
       hora,
-      titulo,
+      titulo: nuevoTitulo.trim(),
+      descripcion: nuevaDescripcion.trim(),
       tipo: "nota",
     };
 
@@ -145,18 +153,22 @@ export default function CalendarioPage() {
       {
         id: nuevo.id,
         title: nuevo.titulo,
+        descripcion: nuevo.descripcion,
         start: inicio,
         end: fin,
         allDay: !nuevo.hora,
       },
     ]);
+
+    setShowModal(false);
+    setNuevoTitulo("");
+    setNuevaDescripcion("");
+    setSelectedSlot(null);
   };
 
-
-
-
+  // 📘 Ver detalles del evento
   const handleSelectEvent = (event: any) => {
-    alert(`📘 Evento: ${event.title}`);
+    setShowDetalle(event);
   };
 
   return (
@@ -166,14 +178,14 @@ export default function CalendarioPage() {
         rel="stylesheet"
       />
 
-      {/* Fondo animado */}
+      {/* Fondo */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#1f2040] via-[#2d2975] to-[#463c91] z-0" />
       <canvas ref={canvasRef} className="absolute inset-0 z-0" />
 
-      {/* Luz ambiental */}
+      {/* Brillo */}
       <div className="glow absolute top-[-100px] left-1/2 w-[400px] h-[400px] -translate-x-1/2 rounded-full bg-gradient-radial from-white/15 to-transparent blur-[90px] animate-pulse-slow pointer-events-none z-0" />
 
-      {/* Botón de regreso */}
+      {/* Volver */}
       <Link
         href="/menu"
         className="fixed top-5 left-5 bg-white/15 text-indigo-200 px-4 py-2 rounded-full font-semibold flex items-center gap-1 backdrop-blur-md shadow-md hover:bg-indigo-300/30 hover:scale-105 transition z-10"
@@ -196,11 +208,7 @@ export default function CalendarioPage() {
             endAccessor="end"
             onSelectSlot={handleSelectSlot}
             onSelectEvent={handleSelectEvent}
-            style={{
-              height: 550,
-              borderRadius: "0.75rem",
-              color: "#111",
-            }}
+            style={{ height: 550, borderRadius: "0.75rem", color: "#111" }}
             messages={{
               next: "Sig.",
               previous: "Ant.",
@@ -213,7 +221,69 @@ export default function CalendarioPage() {
         </div>
       </div>
 
-      {/* Animaciones */}
+      {/* 🪶 Modal crear evento */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md relative">
+            <h3 className="text-2xl font-bold text-indigo-700 mb-3 text-center">
+              ✏️ Nuevo Evento
+            </h3>
+            <input
+              type="text"
+              className="w-full border border-indigo-300 rounded-xl p-3 text-gray-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none mb-3"
+              placeholder="Título (visible en el calendario)"
+              value={nuevoTitulo}
+              onChange={(e) => setNuevoTitulo(e.target.value)}
+            />
+            <textarea
+              className="w-full border border-indigo-300 rounded-xl p-3 text-gray-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none resize-none h-32"
+              placeholder="Descripción o detalles..."
+              value={nuevaDescripcion}
+              onChange={(e) => setNuevaDescripcion(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-xl hover:bg-gray-400 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarEvento}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📘 Modal detalle evento */}
+      {showDetalle && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md relative">
+            <h3 className="text-2xl font-bold text-indigo-700 mb-2 text-center">
+              {showDetalle.title}
+            </h3>
+            <p className="text-gray-600 whitespace-pre-wrap">
+              {showDetalle.descripcion || "Sin descripción"}
+            </p>
+            <p className="text-sm text-gray-500 mt-3 text-right">
+              {format(showDetalle.start, "dd/MM/yyyy HH:mm")}
+            </p>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowDetalle(null)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes pulse-slow {
           0%,
