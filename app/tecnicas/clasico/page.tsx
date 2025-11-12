@@ -1,5 +1,6 @@
 "use client"; // Necesario para usar hooks y efectos
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 
 export default function ClasicoPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -36,9 +37,9 @@ export default function ClasicoPage() {
   return (
     <div className="min-h-screen p-6 font-handlee bg-gradient-to-br from-pink-100 to-purple-100">
       {/* Botón volver */}
-      <a href="/tecnicas" className="text-purple-700 underline text-lg">
+      <Link href="/tecnicas" className="text-purple-700 underline text-lg">
         ← Volver al menú
-      </a>
+      </Link>
 
       <h1 className="text-4xl font-bold text-center text-purple-700 mt-4 mb-6">
         Apunte Clásico

@@ -1,9 +1,12 @@
 // app/page.tsx
 "use client"; // necesario para usar hooks y efectos en Next.js 13+ app directory
 import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { useMusic } from "./context/MusicContext";
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { toggle, playing } = useMusic(); // usamos el contexto global de música
   const bgMusicRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -96,28 +99,23 @@ export default function HomePage() {
           Mientras más apuntes, más construyes...
         </p>
 
-        <a
+        <Link
           href="/menu"
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xl transition animate__animated animate__pulse animate__infinite shadow-lg"
         >
           Comenzar ✨
-        </a>
+        </Link>
 
         {/* Control de música */}
         <div className="mt-10 animate__animated animate__fadeInUp flex justify-center">
           <button
-            onClick={toggleMusic}
-            className="bg-white/20 backdrop-blur-md shadow-md rounded-full px-6 py-3 hover:bg-indigo-500/30 transition flex items-center gap-3"
+            onClick={toggle}
+            className={`bg-white/20 backdrop-blur-md shadow-md rounded-full px-6 py-3 transition flex items-center gap-3
+              ${playing ? "bg-indigo-600 text-white" : "text-indigo-100 hover:bg-indigo-500/30"}`}
           >
-            <i className="bx bx-play text-2xl text-indigo-200"></i>
-            <span className="text-indigo-100 font-medium">Música</span>
+            <i className={`bx ${playing ? "bx-pause" : "bx-play"} text-2xl`}></i>
+            <span className="font-medium">{playing ? "Pausar" : "Música"}</span>
           </button>
-          <audio
-            ref={bgMusicRef}
-            src="/musica/lofi-study-calm-peaceful-chill-hop-112191.mp3"
-            loop
-            preload="auto"
-          />
         </div>
       </main>
 

@@ -14,6 +14,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import html2canvas from "html2canvas";
+import Link from "next/link";
 
 export default function MapaMentalFlow() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);

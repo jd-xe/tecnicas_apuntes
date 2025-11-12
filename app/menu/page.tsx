@@ -1,5 +1,7 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
+import Link from "next/link";
+
 
 export default function MenuPage() {
   const bgMusicRef = useRef<HTMLAudioElement>(null);
@@ -81,13 +83,13 @@ export default function MenuPage() {
       <div className="glow absolute top-[-100px] left-1/2 w-[400px] h-[400px] -translate-x-1/2 rounded-full bg-gradient-radial from-white/15 to-transparent blur-[90px] animate-pulse-slow pointer-events-none z-0" />
 
       {/* Botón de regresar */}
-      <a
+      <Link
         href="/"
         className="btn-regresar fixed top-5 left-5 bg-white/15 text-indigo-200 px-4 py-2 rounded-full font-semibold flex items-center gap-1 backdrop-blur-md shadow-md hover:bg-indigo-300/30 hover:scale-105 transition z-10"
       >
         <i className="bx bx-left-arrow-alt text-2xl"></i>
         <span>Volver</span>
-      </a>
+      </Link>
 
       <h1 className="text-5xl font-bold text-indigo-100 mb-10 drop-shadow-lg animate-fade-in z-10">
         🌤️ Técnicas de Apunte
@@ -124,6 +126,14 @@ export default function MenuPage() {
             text: "Condensa la información más importante en textos claros.",
             delay: "0.3s",
           },
+          {
+  href: "/tecnicas/calendario",
+  icon: "bx bx-calendar text-sky-300",
+  title: "Calendario Escolar",
+  text: "Registra fechas importantes, tareas y actividades.",
+  delay: "0.4s",
+},
+
         ].map(({ href, icon, title, text, delay }, i) => (
           <a
             key={i}
@@ -137,24 +147,11 @@ export default function MenuPage() {
             </h2>
             <p className="text-indigo-100 text-sm">{text}</p>
           </a>
+
         ))}
       </div>
 
-      {/* Control de música */}
-      <div
-        onClick={toggleMusica}
-        className="fixed bottom-6 right-6 bg-white/10 backdrop-blur-md p-3 rounded-full shadow-md flex items-center gap-2 cursor-pointer hover:bg-indigo-500/30 transition z-10"
-      >
-        <i ref={musicIconRef} className="bx bx-play text-2xl text-indigo-100"></i>
-        <span className="text-indigo-100 font-medium hidden sm:inline">Música</span>
-      </div>
 
-      <audio ref={bgMusicRef} loop>
-        <source
-          src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_7f5b59d47b.mp3?filename=soft-piano-melody-ambient-11051.mp3"
-          type="audio/mpeg"
-        />
-      </audio>
 
       {/* 💫 Animaciones personalizadas */}
       <style jsx>{`

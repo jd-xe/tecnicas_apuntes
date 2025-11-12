@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
 interface Ficha {
   titulo: string;
@@ -15,7 +16,7 @@ export default function FichasPage() {
   useEffect(() => {
     const saved = localStorage.getItem("fichasData");
     if (saved) setFichas(JSON.parse(saved));
-  }, []);
+  }, [typeof window !== "undefined"]);
 
   // Guardar fichas en localStorage al actualizar
   useEffect(() => {
