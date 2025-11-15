@@ -110,14 +110,13 @@ export default function HomePage() {
           Mientras más apuntes, más construyes...
         </p>
 
-        {user !== undefined && (
-          <Link
-            href={user ? "/menu" : "/login"}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xl transition animate__animated animate__pulse animate__infinite shadow-lg"
-          >
-            {user ? "Ir al Panel 🚀" : "Comenzar ✨"}
-          </Link>
-        )}
+        <Link
+  href="/menu"
+  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xl transition animate__animated animate__pulse animate__infinite shadow-lg"
+>
+  Comenzar ✨
+</Link>
+
 
         {/* Control de música */}
         <div className="mt-10 animate__animated animate__fadeInUp flex justify-center">

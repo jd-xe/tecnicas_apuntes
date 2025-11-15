@@ -15,11 +15,12 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getUser();
 
   const protectedRoutes = [
-    "/menu",
-    "/agenda",
-    "/perfil",
-    "/fichas",
-    "/tecnicas",
+    //"/menu",
+    //"/agenda",
+    //"/perfil",
+    //"/fichas",
+    //"/tecnicas",
+    "/tecnicas/calendario"
   ];
 
   const isProtected = protectedRoutes.some((path) =>
