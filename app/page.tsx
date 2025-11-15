@@ -1,61 +1,69 @@
-// app/page.tsx
 "use client"; // necesario para usar hooks y efectos en Next.js 13+ app directory
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMusic } from "./context/MusicContext";
+import { supabase } from "@/lib/supabaseClient";
+import SessionStatus from "@/components/SessionStatus";
+import { User } from "@supabase/supabase-js";
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toggle, playing } = useMusic(); // usamos el contexto global de música
   const bgMusicRef = useRef<HTMLAudioElement>(null);
+  //const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
 
   useEffect(() => {
-  const canvas = canvasRef.current;
-  const ctx = canvas?.getContext("2d");
+    supabase.auth.getUser().then((res) => setUser(res.data.user ?? null));
+  }, []);
 
-  if (!canvas || !ctx) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
 
-  let particles: { x: number; y: number; r: number; d: number }[] = [];
-
-  function resizeCanvas() {
-    if (!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-
-  function initParticles() {
-    if (!canvas) return;
-    particles = Array.from({ length: 50 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: Math.random() * 2 + 1,
-      d: Math.random() * 0.5 + 0.2,
-    }));
-  }
-
-  function drawParticles() {
     if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
-    particles.forEach((p) => {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      p.y += p.d;
-      if (p.y > canvas.height) p.y = 0;
-    });
-    requestAnimationFrame(drawParticles);
-  }
 
-  window.addEventListener("resize", resizeCanvas);
-  resizeCanvas();
-  initParticles();
-  drawParticles();
+    let particles: { x: number; y: number; r: number; d: number }[] = [];
 
-  return () => {
-    window.removeEventListener("resize", resizeCanvas);
-  };
-}, []);
+    function resizeCanvas() {
+      if (!canvas) return;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function initParticles() {
+      if (!canvas) return;
+      particles = Array.from({ length: 50 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 2 + 1,
+        d: Math.random() * 0.5 + 0.2,
+      }));
+    }
+
+    function drawParticles() {
+      if (!canvas || !ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+      particles.forEach((p) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        p.y += p.d;
+        if (p.y > canvas.height) p.y = 0;
+      });
+      requestAnimationFrame(drawParticles);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    initParticles();
+    drawParticles();
+
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, []);
 
 
   const toggleMusic = async () => {
@@ -82,6 +90,9 @@ export default function HomePage() {
       {/* Partículas flotantes */}
       <canvas ref={canvasRef} className="absolute inset-0 z-1" />
 
+      {/* 🔐 LOGIN / PANEL / LOGOUT */}
+        <SessionStatus />
+
       {/* Íconos decorativos */}
       <div className="absolute top-10 left-10 opacity-20 text-6xl text-indigo-300 animate__animated animate__fadeInLeft z-10">
         <i className="bx bxs-book"></i>
@@ -99,12 +110,14 @@ export default function HomePage() {
           Mientras más apuntes, más construyes...
         </p>
 
-        <Link
-          href="/menu"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xl transition animate__animated animate__pulse animate__infinite shadow-lg"
-        >
-          Comenzar ✨
-        </Link>
+        {user !== undefined && (
+          <Link
+            href={user ? "/menu" : "/login"}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl text-xl transition animate__animated animate__pulse animate__infinite shadow-lg"
+          >
+            {user ? "Ir al Panel 🚀" : "Comenzar ✨"}
+          </Link>
+        )}
 
         {/* Control de música */}
         <div className="mt-10 animate__animated animate__fadeInUp flex justify-center">
